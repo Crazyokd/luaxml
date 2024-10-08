@@ -22,5 +22,25 @@
             <MSISDN type="Bcd" vendor="10415">8619012345602</MSISDN>
         </Subscription-Data>
         <Route-Record type="string" vendor="0">SYHSS04FE14BER.sy.ln.node.epc.mnc000.mcc460.3gppnetwork.org</Route-Record>
+        <selves type="array">
+            <self index="1">1</self>
+            <self index="2">2</self>
+        </selves>
     </avp>
+    <people>
+        <person type="natural">
+            <name>Manoel</name>
+            <city>Palmas-TO</city>
+        </person>
+        <person type="natural">
+            <name>Breno</name>
+            <city>Palmas-TO</city>
+        </person>
+        <person type="legal">
+            <name>University of Brasília</name>
+            <city>Brasília-DF</city>
+            <empty></empty>
+            <void/>
+        </person>
+    </people>
 </root>

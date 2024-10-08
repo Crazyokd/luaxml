@@ -73,6 +73,7 @@ print(lx1:get("/root/key1"))
 print(lx1:get("/root/key3[1]"))
 lx1:set("/root/key3[1]", 789)
 print(lx1:get("/root/key3[1]"))
+print(lx1:get("/root/key5"))
 
 lx1:set("/root/key3[3]", 1024)
 lx1:print()

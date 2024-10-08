@@ -227,7 +227,8 @@ end
 
 local function _parseDtd(xml, pos)
     -- match,endMatch,root,type,name,uri,internal
-    local dtdPatterns = { XmlParser._DTD1, XmlParser._DTD2, XmlParser._DTD3, XmlParser._DTD4, XmlParser._DTD5, XmlParser._DTD6 }
+    local dtdPatterns = { XmlParser._DTD1, XmlParser._DTD2, XmlParser._DTD3, XmlParser._DTD4, XmlParser._DTD5, XmlParser
+        ._DTD6 }
 
     for _, dtd in pairs(dtdPatterns) do
         local m, e, r, t, n, u, i = string.find(xml, dtd, pos)
@@ -292,16 +293,14 @@ function luaxml:parseNormalTag(xml, f)
     local tag = parseTag(f.tagstr)
 
     if (f.endt1 == "/") then
-        -- if fexists(XmlParser.handler, 'endtag') then
-            if tag.attrs then
-                -- Shouldn't have any attributes in endtag
-                err(string.format("%s (/%s)", XmlParser._errstr.endTagErr, tag.name), f.pos)
-            end
-            if table.remove(self._stack) ~= tag.name then
-                err(string.format("%s (/%s)", XmlParser._errstr.unmatchedTagErr, tag.name), f.pos)
-            end
-            -- XmlParser.handler:endtag(tag, f.match, f.endMatch)
-        -- end
+        if tag.attrs then
+            -- Shouldn't have any attributes in endtag
+            err(string.format("%s (/%s)", XmlParser._errstr.endTagErr, tag.name), f.pos)
+        end
+        if table.remove(self._stack) ~= tag.name then
+            err(string.format("%s (/%s)", XmlParser._errstr.unmatchedTagErr, tag.name), f.pos)
+        end
+        -- XmlParser.handler:endtag(tag, f.match, f.endMatch)
     else
         table.insert(self._stack, tag.name)
 
@@ -400,41 +399,12 @@ function luaxml:parse(xml, parseAttributes)
         f.endText = f.match + string.len(f.text) - 1
         f.match = f.match + string.len(f.text)
         f.text = parseEntities(stripWS(f.text))
-        -- if f.text ~= "" and fexists(self.handler, 'text') then
-            -- self.handler:text(f.text, f.match, f.endText)
-            self:add_node(f.text)
-        -- end
+        self:add_node(f.text)
 
         self:parseTagType(xml, f)
         f.pos = f.endMatch + 1
     end
 end
-
--- end stolen
-
--- function text(s, text, nmatch, etext)
---     -- print("text", string.len(text), text, etext)
---     -- print("text")
--- end
--- -- handle xml declaration
--- function decl(s, tag, smatch, eMatch)
---     print("decl", tag.name, smatch, eMatch)
--- end
--- function pi (s, tag, match, ematch)
---     print("pi", tag, match, ematch)
--- end
--- function comment (s, text, next, match, ematch)
---     print("comment", text, next, match, ematch)
--- end
--- function dtd(s, tag, match, ematch)
---     print("dtd", tag, match, ematch)
--- end
--- function cdata(s, text, match, ematch)
---     print("cdata", text, match, ematch)
--- end
--- function endtag (s, tag, match, ematch)
---     print("endtag", tag.name, match, ematch)
--- end
 
 -- alloc a new luaxml object
 function luaxml.new()
@@ -455,19 +425,118 @@ function luaxml:load(str)
     return self.xt
 end
 
+-- add empty node
+-- local function add_enode(obj, tname)
+--     -- default always add node before the head
+--     local head_key = obj["@head"]
+--     obj[tname] = {["@next"] = head_key}
+--     obj["@head"] = tname
+--
+--     return obj[tname]
+-- end
+
+-- add empty node
+local function add_enode(obj, tname)
+    -- default always add node after then tail
+    obj[tname] = {}
+    local key = obj["@head"]
+    if not key then
+        -- the tname is first child of obj
+        obj["@head"] = tname
+    else
+        while obj[key]["@next"] do
+            key = obj[key]["@next"]
+        end
+        obj[key]["@next"] = tname
+    end
+
+    return obj[tname]
+end
+
+-- add empty array item
+local function add_eitem(obj, idx)
+    local len = #obj
+    if idx <= len then
+        for i in len, idx, -1 do
+            obj[i + 1] = obj[i]
+        end
+    end
+
+    obj[idx] = {}
+
+    return obj[idx]
+end
+
 -- construct inner xml table
 function luaxml:add_node(v)
     local path = '/' .. table.concat(self._stack, '/')
     if string.len(v) ~= 0 then
         -- print("path", path, v)
-        self:set(path, v)
+        -- self:construct(path, v)
+        local val = v
+        if type(val) == "table" then
+            return
+        end
+
+        local obj = self.xt
+        -- find all node name and iterate it.
+        local iter = string.gmatch(path, "/([^/]+)")
+        local n = iter()
+        while n do
+            if obj[n] then
+                obj = obj[n]
+            end
+            if #obj ~= 0 then
+                obj = obj[#obj]
+            end
+            n = iter()
+        end
+
+        obj["@val"] = val
     end
 end
 
 function luaxml:add_attr(tag)
     local path = '/' .. table.concat(self._stack, '/')
     -- print("path", path, tag.name, tag.attrs)
-    self:set(path, tag.name, tag.attrs)
+    -- self:construct(path, nil, tag.attrs)
+    local attr = tag.attrs
+    local obj = self.xt
+    -- find all node name and iterate it.
+    local iter = string.gmatch(path, "/([^/]+)")
+    local n = iter()
+    while n do
+        local next = iter()
+        -- last node, we add it
+        if not next then
+            if not obj[n] then
+                obj = add_enode(obj, n)
+            elseif #obj[n] ~= 0 then
+                obj = add_eitem(obj[n], #obj[n] + 1)
+            elseif obj[n] then
+                -- convert to array
+                obj[n] = { [1] = obj[n] }
+                obj = add_eitem(obj[n], 2)
+            end
+            break
+        end
+        if obj[n] then
+            obj = obj[n]
+        end
+        if #obj ~= 0 then
+            obj = obj[#obj]
+        end
+        n = next
+    end
+
+    if attr then
+        if not obj["@attr"] then
+            obj["@attr"] = {}
+        end
+        for k, v in pairs(attr) do
+            obj["@attr"][k] = v
+        end
+    end
 end
 
 function luaxml:add_meta(meta)
@@ -502,13 +571,13 @@ end
 --@param attrTable table from where the _attr field will be got
 --@return a XML String representation of the tag attributes
 local function print_attr(attr)
-  local s = ""
-  attr = attr or {}
+    local s = ""
+    attr = attr or {}
 
-  for k, v in pairs(attr) do
-      s = s .. " " .. k .. "=" .. '"' .. v .. '"'
-  end
-  return s
+    for k, v in pairs(attr) do
+        s = s .. " " .. k .. "=" .. '"' .. v .. '"'
+    end
+    return s
 end
 
 function luaxml:print_stag(tn, attr, level)
@@ -553,8 +622,14 @@ function luaxml:print_i(xt, level, tn)
         end
     elseif #xt ~= 0 then
         -- array
-        for _, v in ipairs(xt) do
+        for i, v in ipairs(xt) do
+            if xt[i]["@head"] then
+                self:print_stag(tn, v["@attr"], level)
+            end
             self:print_i(v, level, tn)
+            if xt[i]["@head"] then
+                self:print_etag(tn, level)
+            end
         end
     else
         self:print_tag(tn, xt["@val"], xt["@attr"], level)
@@ -597,7 +672,7 @@ function luaxml:get(path, xt)
         end
     end
 
-    if obj["@val"] then
+    if obj and obj["@val"] then
         return obj["@val"]
     else
         return obj
@@ -606,48 +681,6 @@ end
 
 function luaxml:get_attr(obj, attr)
     return obj["@attr"][attr]
-end
-
--- add empty node
--- local function add_enode(obj, tname)
---     -- default always add node before the head
---     local head_key = obj["@head"]
---     obj[tname] = {["@next"] = head_key}
---     obj["@head"] = tname
---
---     return obj[tname]
--- end
-
--- add empty node
-local function add_enode(obj, tname)
-    -- default always add node after then tail
-    obj[tname] = {}
-    local key = obj["@head"]
-    if not key then
-        -- the tname is first child of obj
-        obj["@head"] = tname
-    else
-        while obj[key]["@next"] do
-            key = obj[key]["@next"]
-        end
-        obj[key]["@next"] = tname
-    end
-
-    return obj[tname]
-end
-
--- add empty array item
-local function add_eitem(obj, idx)
-    local len = #obj
-    if idx <= len then
-        for i in len, idx, -1 do
-            obj[i + 1] = obj[i]
-        end
-    end
-
-    obj[idx] = {}
-
-    return obj[idx]
 end
 
 -- 元素名称必须以字母或下划线（_）开头
