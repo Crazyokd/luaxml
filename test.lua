@@ -1,24 +1,25 @@
 local function print_r(root)
-    local cache = {  [root] = "." }
+    local cache = { [root] = "." }
 
-    local function _dump(t,space,name)
+    local function _dump(t, space, name)
         local temp = {}
-        for k,v in pairs(t) do
+        for k, v in pairs(t) do
             local key = tostring(k)
             if cache[v] then
-                table.insert(temp,"+" .. key .. " {" .. cache[v].."}")
+                table.insert(temp, "+" .. key .. " {" .. cache[v] .. "}")
             elseif type(v) == "table" then
                 local new_key = name .. "." .. key
                 cache[v] = new_key
-                table.insert(temp,"+" .. key .. _dump(v,space .. (next(t,k) and "|" or " " ).. string.rep(" ",#key),new_key))
+                table.insert(temp,
+                    "+" .. key .. _dump(v, space .. (next(t, k) and "|" or " ") .. string.rep(" ", #key), new_key))
             else
-                table.insert(temp,"+" .. key .. " [" .. tostring(v).."]")
+                table.insert(temp, "+" .. key .. " [" .. tostring(v) .. "]")
             end
         end
-        return table.concat(temp,"\n"..space)
+        return table.concat(temp, "\n" .. space)
     end
 
-    print(_dump(root, "" , ""))
+    print(_dump(root, "", ""))
 end
 
 
@@ -28,15 +29,13 @@ local lx1 = luaxml.new()
 lx1.xt = {
     ["@meta"] = {},
     root = {
-        -- _val|_key|_idx互斥
-        -- _attr与_idx互斥
         key1 = {
             ["@val"] = "value1",
             ["@next"] = "key2",
         },
         key2 = {
             ["@val"] = 123,
-            ["@attr"] = {type = "string"},
+            ["@attr"] = { type = "string" },
             ["@next"] = "key3",
         },
         key3 = {
@@ -56,7 +55,8 @@ lx1.xt = {
             key42 = {
                 ["@val"] = 123,
             },
-            ["@head"] = "key41"
+            ["@head"] = "key41",
+            ["@attr"] = { type = "map" },
         },
         ["@head"] = "key1",
     },
@@ -70,10 +70,18 @@ print(lx1:get("/root/key1"))
 lx1:set("/root/key1", 456)
 print(lx1:get("/root/key1"))
 
+
 print(lx1:get("/root/key3[1]"))
 lx1:set("/root/key3[1]", 789)
 print(lx1:get("/root/key3[1]"))
 print(lx1:get("/root/key5"))
 
 lx1:set("/root/key3[3]", 1024)
+
+-- iterate attrs
+local key4attrs = lx1:get_attrs("/root/key4")
+for k, v in pairs(key4attrs) do
+    print(k, v)
+end
+
 lx1:print()

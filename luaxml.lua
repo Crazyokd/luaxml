@@ -304,7 +304,7 @@ function luaxml:parseNormalTag(xml, f)
     else
         table.insert(self._stack, tag.name)
 
-        self:add_attr(tag)
+        self:add_tag(tag)
 
         -- Self-Closing Tag
         if (f.endt2 == "/") then
@@ -399,7 +399,7 @@ function luaxml:parse(xml, parseAttributes)
         f.endText = f.match + string.len(f.text) - 1
         f.match = f.match + string.len(f.text)
         f.text = parseEntities(stripWS(f.text))
-        self:add_node(f.text)
+        self:set_val(f.text)
 
         self:parseTagType(xml, f)
         f.pos = f.endMatch + 1
@@ -468,13 +468,12 @@ local function add_eitem(obj, idx)
 end
 
 -- construct inner xml table
-function luaxml:add_node(v)
+function luaxml:set_val(v)
     local path = '/' .. table.concat(self._stack, '/')
     if string.len(v) ~= 0 then
         -- print("path", path, v)
         -- self:construct(path, v)
-        local val = v
-        if type(val) == "table" then
+        if type(v) == "table" then
             return
         end
 
@@ -492,11 +491,11 @@ function luaxml:add_node(v)
             n = iter()
         end
 
-        obj["@val"] = val
+        obj["@val"] = v
     end
 end
 
-function luaxml:add_attr(tag)
+function luaxml:add_tag(tag)
     local path = '/' .. table.concat(self._stack, '/')
     -- print("path", path, tag.name, tag.attrs)
     -- self:construct(path, nil, tag.attrs)
@@ -679,8 +678,20 @@ function luaxml:get(path, xt)
     end
 end
 
-function luaxml:get_attr(obj, attr)
-    return obj["@attr"][attr]
+function luaxml:get_attrs(path)
+    local obj = self.xt
+    -- find all node name and iterate it.
+    for n in string.gmatch(path, "/([^/]+)") do
+        local s, e = string.find(n, "%[%d+%]", 1, false)
+        if s then
+            obj = obj[string.sub(n, 1, s - 1)][tonumber(string.sub(n, s + 1, e - 1))]
+            print(obj)
+        else
+            obj = obj[n]
+        end
+    end
+
+    return obj["@attr"]
 end
 
 -- 元素名称必须以字母或下划线（_）开头
