@@ -383,7 +383,7 @@ function luaxml:print_tag(tn, tag_val, attr, level)
     end
 end
 
-local function getKey(key)
+local function rmv_idx(key)
     return key:match("^([^@]+)");
 end
 
@@ -394,27 +394,16 @@ function luaxml:print_i(xt, level, tn)
         level = level + 1
         while key do
             if xt[key]["@head"] then
-                self:print_stag(getKey(key), xt[key]["@attr"], level)
+                self:print_stag(rmv_idx(key), xt[key]["@attr"], level)
             end
             self:print_i(xt[key], level, key)
             if xt[key]["@head"] then
-                self:print_etag(getKey(key), level)
+                self:print_etag(rmv_idx(key), level)
             end
             key = xt[key]["@next"]
         end
-    elseif #xt ~= 0 then
-        -- array
-        for i, v in ipairs(xt) do
-            if xt[i]["@head"] then
-                self:print_stag(tn, v["@attr"], level)
-            end
-            self:print_i(v, level, tn)
-            if xt[i]["@head"] then
-                self:print_etag(tn, level)
-            end
-        end
     else
-        self:print_tag(getKey(tn), xt["@val"], xt["@attr"], level)
+        self:print_tag(rmv_idx(tn), xt["@val"], xt["@attr"], level)
     end
 end
 
@@ -683,14 +672,7 @@ function luaxml:set(path, val, attr)
         end
     end
 
-    if attr then
-        if not obj["@attr"] then
-            obj["@attr"] = {}
-        end
-        for k, v in pairs(attr) do
-            obj["@attr"][k] = v
-        end
-    end
+    obj["@attr"] = attr
     -- neither a map nor an array
     if not obj["@head"] and #obj == 0 then
         obj["@val"] = val
