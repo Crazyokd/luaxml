@@ -1,22 +1,5 @@
 local luaxml = {}
 
---  Available options are:
---      * stripWS
---        Strip non-significant whitespace (leading/trailing)
---        and do not generate events for empty text elements
---
---      * expandEntities
---        Expand entities (standard entities + single char
---        numeric entities only currently - could be extended
---        at runtime if suitable DTD parser added elements
---        to table (see obj._ENTITIES). May also be possible
---        to expand multibyre entities for UTF-8 only
---
---      * errorHandler
---        Custom error handler function
---
---  NOTE: Boolean options must be set to 'nil' not '0'
-
 ---Converts the decimal code of a character to its corresponding char
 --if it's a graphical char, otherwise, returns the HTML ISO code
 --for that decimal value in the format &#code
@@ -360,6 +343,196 @@ function luaxml:getNextTag(xml, f)
     return f.endMatch ~= nil
 end
 
+local function print_space(level)
+    local spaces = string.rep(' ', level * 2)
+    return spaces
+end
+
+local function print_attr(attr)
+    local s = ""
+    attr = attr or {}
+
+    for k, v in pairs(attr) do
+        s = s .. " " .. k .. "=" .. '"' .. v .. '"'
+    end
+    return s
+end
+
+function luaxml:print_stag(tn, attr, level)
+    local attrStr = print_attr(attr)
+    local spaces = print_space(level)
+    if (tn ~= nil) then
+        table.insert(self.xmlstr, spaces .. '<' .. tn .. attrStr .. '>')
+    end
+end
+
+function luaxml:print_etag(tn, level)
+    local spaces = print_space(level)
+    if (tn ~= nil) then
+        table.insert(self.xmlstr, spaces .. '</' .. tn .. '>')
+    end
+end
+
+function luaxml:print_tag(tn, tag_val, attr, level)
+    local attrstr = print_attr(attr)
+    local spaces = print_space(level)
+    if tag_val then
+        table.insert(self.xmlstr, spaces .. '<' .. tn .. attrstr .. '>' .. tostring(tag_val) .. '</' .. tn .. '>')
+    else
+        table.insert(self.xmlstr, spaces .. '<' .. tn .. attrstr .. '/>')
+    end
+end
+
+local function getKey(key)
+    return key:match("^([^@]+)");
+end
+
+function luaxml:print_i(xt, level, tn)
+    if xt["@head"] then
+        -- kv pair
+        local key = xt["@head"]
+        level = level + 1
+        while key do
+            if xt[key]["@head"] then
+                self:print_stag(getKey(key), xt[key]["@attr"], level)
+            end
+            self:print_i(xt[key], level, key)
+            if xt[key]["@head"] then
+                self:print_etag(getKey(key), level)
+            end
+            key = xt[key]["@next"]
+        end
+    elseif #xt ~= 0 then
+        -- array
+        for i, v in ipairs(xt) do
+            if xt[i]["@head"] then
+                self:print_stag(tn, v["@attr"], level)
+            end
+            self:print_i(v, level, tn)
+            if xt[i]["@head"] then
+                self:print_etag(tn, level)
+            end
+        end
+    else
+        self:print_tag(getKey(tn), xt["@val"], xt["@attr"], level)
+    end
+end
+
+-- add empty node
+-- local function add_enode(obj, tname)
+--     -- default always add node before the head
+--     local head_key = obj["@head"]
+--     obj[tname] = {["@next"] = head_key}
+--     obj["@head"] = tname
+--
+--     return obj[tname]
+-- end
+
+-- add empty node
+local function add_enode(obj, tname)
+    -- default always add node after then tail
+    obj[tname] = {}
+    local key = obj["@head"]
+    if not key then
+        -- the tname is first child of obj
+        obj["@head"] = tname
+    else
+        while obj[key]["@next"] do
+            key = obj[key]["@next"]
+        end
+        obj[key]["@next"] = tname
+    end
+
+    return obj[tname]
+end
+
+local function find_key(t, key)
+    local n = 1
+    while true do
+        local currentKey = key .. "@" .. n
+        if t[currentKey] then
+            n = n + 1
+        else
+            break
+        end
+    end
+    return key .. '@', n - 1 -- 返回找到的最大 n 值
+end
+
+-- construct inner xml table
+function luaxml:set_val(v)
+    local path = '/' .. table.concat(self._stack, '/')
+    if string.len(v) ~= 0 then
+        -- print("path", path, v)
+        if type(v) == "table" then
+            return
+        end
+
+        local obj = self.xt
+        -- find all node name and iterate it.
+        local iter = string.gmatch(path, "/([^/]+)")
+        local n = iter()
+        while n do
+            local k, i = find_key(obj, n)
+            if obj[k .. i] then
+                obj = obj[k .. i]
+            end
+            n = iter()
+        end
+
+        obj["@val"] = v
+    end
+end
+
+function luaxml:add_tag(tag)
+    local path = '/' .. table.concat(self._stack, '/')
+    -- print("path", path, tag.name, tag.attrs)
+    local attr = tag.attrs
+    local obj = self.xt
+    -- find all node name and iterate it.
+    local iter = string.gmatch(path, "/([^/]+)")
+    local n = iter()
+    while n do
+        local next = iter()
+        local k, i = find_key(obj, n)
+        -- last node, we add it
+        if not next then
+            obj = add_enode(obj, k .. (i + 1))
+            break
+        end
+        if obj[k .. i] then
+            obj = obj[k .. i]
+        end
+        n = next
+    end
+
+    if attr then
+        if not obj["@attr"] then
+            obj["@attr"] = {}
+        end
+        for k, v in pairs(attr) do
+            obj["@attr"][k] = v
+        end
+    end
+end
+
+function luaxml:add_meta(meta)
+    self.xt.meta = meta
+end
+
+-- public API
+
+-- alloc a new luaxml object
+function luaxml.new()
+    local lx = {}
+    setmetatable(lx, luaxml)
+    luaxml.__index = luaxml
+    -- for anyone who want to use lx as a metatable
+    lx.__index = luaxml
+    lx.xt = {}
+    return lx
+end
+
 --Main function which starts the XML parsing process
 --@param xml the XML string to parse
 --@param parseAttributes indicates if tag attributes should be parsed or not.
@@ -406,140 +579,12 @@ function luaxml:parse(xml, parseAttributes)
     end
 end
 
--- alloc a new luaxml object
-function luaxml.new()
-    local lx = {}
-    setmetatable(lx, luaxml)
-    luaxml.__index = luaxml
-    -- for anyone who want to use lx as a metatable
-    lx.__index = luaxml
-    lx.xt = {}
-    return lx
-end
-
 -- load xml str and generate a luax object
 function luaxml:load(str)
     self._stack = {}
     self:parse(str, nil)
     self._stack = nil
     return self.xt
-end
-
--- add empty node
--- local function add_enode(obj, tname)
---     -- default always add node before the head
---     local head_key = obj["@head"]
---     obj[tname] = {["@next"] = head_key}
---     obj["@head"] = tname
---
---     return obj[tname]
--- end
-
--- add empty node
-local function add_enode(obj, tname)
-    -- default always add node after then tail
-    obj[tname] = {}
-    local key = obj["@head"]
-    if not key then
-        -- the tname is first child of obj
-        obj["@head"] = tname
-    else
-        while obj[key]["@next"] do
-            key = obj[key]["@next"]
-        end
-        obj[key]["@next"] = tname
-    end
-
-    return obj[tname]
-end
-
--- add empty array item
-local function add_eitem(obj, idx)
-    local len = #obj
-    if idx <= len then
-        for i in len, idx, -1 do
-            obj[i + 1] = obj[i]
-        end
-    end
-
-    obj[idx] = {}
-
-    return obj[idx]
-end
-
--- construct inner xml table
-function luaxml:set_val(v)
-    local path = '/' .. table.concat(self._stack, '/')
-    if string.len(v) ~= 0 then
-        -- print("path", path, v)
-        -- self:construct(path, v)
-        if type(v) == "table" then
-            return
-        end
-
-        local obj = self.xt
-        -- find all node name and iterate it.
-        local iter = string.gmatch(path, "/([^/]+)")
-        local n = iter()
-        while n do
-            if obj[n] then
-                obj = obj[n]
-            end
-            if #obj ~= 0 then
-                obj = obj[#obj]
-            end
-            n = iter()
-        end
-
-        obj["@val"] = v
-    end
-end
-
-function luaxml:add_tag(tag)
-    local path = '/' .. table.concat(self._stack, '/')
-    -- print("path", path, tag.name, tag.attrs)
-    -- self:construct(path, nil, tag.attrs)
-    local attr = tag.attrs
-    local obj = self.xt
-    -- find all node name and iterate it.
-    local iter = string.gmatch(path, "/([^/]+)")
-    local n = iter()
-    while n do
-        local next = iter()
-        -- last node, we add it
-        if not next then
-            if not obj[n] then
-                obj = add_enode(obj, n)
-            elseif #obj[n] ~= 0 then
-                obj = add_eitem(obj[n], #obj[n] + 1)
-            elseif obj[n] then
-                -- convert to array
-                obj[n] = { [1] = obj[n] }
-                obj = add_eitem(obj[n], 2)
-            end
-            break
-        end
-        if obj[n] then
-            obj = obj[n]
-        end
-        if #obj ~= 0 then
-            obj = obj[#obj]
-        end
-        n = next
-    end
-
-    if attr then
-        if not obj["@attr"] then
-            obj["@attr"] = {}
-        end
-        for k, v in pairs(attr) do
-            obj["@attr"][k] = v
-        end
-    end
-end
-
-function luaxml:add_meta(meta)
-    self.xt.meta = meta
 end
 
 -- load xml from file and generate a luax object
@@ -556,83 +601,6 @@ function luaxml:save(fn, fflag)
     local f = assert(io.open(fn, fflag))
     self:print(nil, f)
     f:close()
-end
-
-local function print_space(level)
-    local spaces = string.rep(' ', level * 2)
-    return spaces
-end
-
----Gets an _attr element from a table that represents the attributes of an XML tag,
---and generates a XML String representing the attibutes to be inserted
---into the openning tag of the XML
---
---@param attrTable table from where the _attr field will be got
---@return a XML String representation of the tag attributes
-local function print_attr(attr)
-    local s = ""
-    attr = attr or {}
-
-    for k, v in pairs(attr) do
-        s = s .. " " .. k .. "=" .. '"' .. v .. '"'
-    end
-    return s
-end
-
-function luaxml:print_stag(tn, attr, level)
-    local attrStr = print_attr(attr)
-    local spaces = print_space(level)
-    if (tn ~= nil) then
-        table.insert(self.xmlstr, spaces .. '<' .. tn .. attrStr .. '>')
-    end
-end
-
-function luaxml:print_etag(tn, level)
-    local spaces = print_space(level)
-    if (tn ~= nil) then
-        table.insert(self.xmlstr, spaces .. '</' .. tn .. '>')
-    end
-end
-
-function luaxml:print_tag(tn, tag_val, attr, level)
-    local attrstr = print_attr(attr)
-    local spaces = print_space(level)
-    if tag_val then
-        table.insert(self.xmlstr, spaces .. '<' .. tn .. attrstr .. '>' .. tostring(tag_val) .. '</' .. tn .. '>')
-    else
-        table.insert(self.xmlstr, spaces .. '<' .. tn .. attrstr .. '/>')
-    end
-end
-
-function luaxml:print_i(xt, level, tn)
-    if xt["@head"] then
-        -- kv pair
-        local key = xt["@head"]
-        level = level + 1
-        while key do
-            if xt[key]["@head"] then
-                self:print_stag(key, xt[key]["@attr"], level)
-            end
-            self:print_i(xt[key], level, key)
-            if xt[key]["@head"] then
-                self:print_etag(key, level)
-            end
-            key = xt[key]["@next"]
-        end
-    elseif #xt ~= 0 then
-        -- array
-        for i, v in ipairs(xt) do
-            if xt[i]["@head"] then
-                self:print_stag(tn, v["@attr"], level)
-            end
-            self:print_i(v, level, tn)
-            if xt[i]["@head"] then
-                self:print_etag(tn, level)
-            end
-        end
-    else
-        self:print_tag(tn, xt["@val"], xt["@attr"], level)
-    end
 end
 
 -- print xml str
@@ -656,15 +624,14 @@ end
 -- get by path
 -- /root/key1
 -- /root/key3[1]
-function luaxml:get(path, xt)
-    local obj = xt or self.xt
+function luaxml:get(path)
+    local obj = self.xt
     -- find all node name and iterate it.
     for n in string.gmatch(path, "/([^/]+)") do
         local s, e = string.find(n, "%[%d+%]", 1, false)
         if s then
-            -- print(string.sub(n, 1, s - 1), string.sub(n, s + 1, e - 1))
-            obj = obj[string.sub(n, 1, s - 1)][tonumber(string.sub(n, s + 1, e - 1))]
-            print(obj)
+            obj = obj[n:sub(1, s - 1) .. '@' .. tonumber(n:sub(s + 1, e - 1))]
+            -- print(obj)
         else
             -- print(n)
             obj = obj[n]
@@ -707,33 +674,12 @@ function luaxml:set(path, val, attr)
     for n in string.gmatch(path, "/([^/]+)") do
         local s, e = string.find(n, "%[%d+%]", 1, false)
         if s then
-            local an = string.sub(n, 1, s - 1)
-            local ad = tonumber(string.sub(n, s + 1, e - 1))
-            -- print(an, ad)
-            -- todo: add more restriction?
-            if obj[an] then
-                obj = obj[an]
-            else
-                obj = add_enode(obj, an)
-            end
-
-            if ad > 0 then
-                if ad <= #obj then
-                    obj = obj[ad]
-                elseif ad == #obj + 1 then
-                    obj = add_eitem(obj, ad)
-                else
-                    return
-                end
-            else
-                return
-            end
+            n = n:sub(1, s - 1) .. '@' .. tonumber(n:sub(s + 1, e - 1))
+        end
+        if obj[n] then
+            obj = obj[n]
         else
-            if obj[n] then
-                obj = obj[n]
-            else
-                obj = add_enode(obj, n)
-            end
+            obj = add_enode(obj, n)
         end
     end
 

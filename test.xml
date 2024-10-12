@@ -43,4 +43,20 @@
             <void/>
         </person>
     </people>
+    <dict>
+        <key>background</key>
+        <string>#262626</string>
+        <key>foreground</key>
+        <string>#bcbcbc</string>
+        <key>invisibles</key>
+        <string>#585858</string>
+        <key>lineHighlight</key>
+        <string>#262626</string>
+        <key>lineDiffAdded</key>
+        <string>#87afff</string>
+        <key>lineDiffModified</key>
+        <string>#dfdfdf</string>
+        <key>lineDiffDeleted</key>
+        <string>#ffdf87</string>
+    </dict>
 </root>
