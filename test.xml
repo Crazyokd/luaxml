@@ -1,62 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
-    <command_code>Insert-Subscriber-Data-Request</command_code>
-    <applicationId>3GPP S6a/S6d</applicationId>
-    <Hop-by-Hop>0x427f110</Hop-by-Hop>
-    <End-to-End>0x14243796</End-to-End>
-    <avp>
-        <Session-Id type="string" vendor="0">SYHSS04FE14BER.sy.ln.node.epc.mnc000.mcc460.3gppnetwork.org;337917846</Session-Id>
-        <Vendor-Specific-Application-Id type="group" vendor="0">
-            <Vendor-Id type="i32" vendor="0">10415</Vendor-Id>
-            <Auth-Application-Id type="i32" vendor="0">16777251</Auth-Application-Id>
-        </Vendor-Specific-Application-Id>
-        <Auth-Session-State type="i32" vendor="0">1</Auth-Session-State>
-        <Origin-Host type="string" vendor="0">mmec4a.mmegi020a.mme.epc.mnc000.mcc460.3gppnetwork.org</Origin-Host>
-        <Origin-Realm type="string" vendor="0">epc.mnc000.mcc460.3gppnetwork.org</Origin-Realm>
-        <Destination-Realm type="string" vendor="0">mme.com</Destination-Realm>
-        <Destination-Host type="string" vendor="0">100.mme.com</Destination-Host>
-        <IDR-Flags type="i32" vendor="10415"/>
-        <User-Name type="string" vendor="0">460018765432101</User-Name>
-        <Subscription-Data type="group" vendor="10415">
-            <!--     <STN-SR type="bin" vendor="10415">68 31 47 03 62</STN-SR> -->
-            <MSISDN type="Bcd" vendor="10415">8619012345602</MSISDN>
-        </Subscription-Data>
-        <Route-Record type="string" vendor="0">SYHSS04FE14BER.sy.ln.node.epc.mnc000.mcc460.3gppnetwork.org</Route-Record>
-        <selves type="array">
-            <self index="1">1</self>
-            <self index="2">2</self>
-        </selves>
-    </avp>
-    <people>
-        <person type="natural">
-            <name>Manoel</name>
-            <city>Palmas-TO</city>
-        </person>
-        <person type="natural">
-            <name>Breno</name>
-            <city>Palmas-TO</city>
-        </person>
-        <person type="legal">
-            <name>University of Brasília</name>
-            <city>Brasília-DF</city>
-            <empty></empty>
-            <void/>
-        </person>
-    </people>
-    <dict>
-        <key>background</key>
-        <string>#262626</string>
-        <key>foreground</key>
-        <string>#bcbcbc</string>
-        <key>invisibles</key>
-        <string>#585858</string>
-        <key>lineHighlight</key>
-        <string>#262626</string>
-        <key>lineDiffAdded</key>
-        <string>#87afff</string>
-        <key>lineDiffModified</key>
-        <string>#dfdfdf</string>
-        <key>lineDiffDeleted</key>
-        <string>#ffdf87</string>
-    </dict>
+  <command_code>Insert-Subscriber-Data-Request</command_code>
+  <applicationId>3GPP S6a/S6d</applicationId>
+  <Hop-by-Hop>0x427f110</Hop-by-Hop>
+  <End-to-End>0x14243796</End-to-End>
+  <avp>
+    <Session-Id type="string" vendor="0">SYHSS04FE14BER.sy.ln.node.epc.mnc000.mcc460.3gppnetwork.org;337917846</Session-Id>
+    <Vendor-Specific-Application-Id type="group" vendor="0">
+      <Vendor-Id type="i32" vendor="0">10415</Vendor-Id>
+      <Auth-Application-Id type="i32" vendor="0">16777251</Auth-Application-Id>
+    </Vendor-Specific-Application-Id>
+    <Auth-Session-State type="i32" vendor="0">1</Auth-Session-State>
+    <Origin-Host type="string" vendor="0">mmec4a.mmegi020a.mme.epc.mnc000.mcc460.3gppnetwork.org</Origin-Host>
+    <Origin-Realm type="string" vendor="0">epc.mnc000.mcc460.3gppnetwork.org</Origin-Realm>
+    <Destination-Realm type="string" vendor="0">mme.com</Destination-Realm>
+    <Destination-Host type="string" vendor="0">100.mme.com</Destination-Host>
+    <IDR-Flags type="i32" vendor="10415"/>
+    <User-Name type="string" vendor="0">460018765432101</User-Name>
+    <Subscription-Data type="group" vendor="10415">
+      <!--     <STN-SR type="bin" vendor="10415">68 31 47 03 62</STN-SR> -->
+      <MSISDN type="Bcd" vendor="10415">8619012345602</MSISDN>
+    </Subscription-Data>
+    <Route-Record type="string" vendor="0">SYHSS04FE14BER.sy.ln.node.epc.mnc000.mcc460.3gppnetwork.org</Route-Record>
+    <selves type="array">
+      <self index="1">1</self>
+      <self index="2">2</self>
+    </selves>
+  </avp>
+  <people>
+    <person type="natural">
+      <name>Manoel</name>
+      <city>Palmas-TO</city>
+    </person>
+    <person type="natural">
+      <name>Breno</name>
+      <city>Palmas-TO</city>
+    </person>
+    <person type="legal">
+      <name>University of Brasília</name>
+      <city>Brasília-DF</city>
+      <empty/>
+      <void/>
+    </person>
+  </people>
+  <dict>
+    <key>background</key>
+    <string>#262626</string>
+    <key>foreground</key>
+    <string>#bcbcbc</string>
+    <key>invisibles</key>
+    <string>#585858</string>
+    <key>lineHighlight</key>
+    <string>#262626</string>
+    <key>lineDiffAdded</key>
+    <string>#87afff</string>
+    <key>lineDiffModified</key>
+    <string>#dfdfdf</string>
+    <key>lineDiffDeleted</key>
+    <string>#ffdf87</string>
+  </dict>
 </root>

@@ -618,13 +618,11 @@ function luaxml:get(path)
     -- find all node name and iterate it.
     for n in string.gmatch(path, "/([^/]+)") do
         local s, e = string.find(n, "%[%d+%]", 1, false)
+        local idx = tonumber(1)
         if s then
-            obj = obj[n:sub(1, s - 1) .. '@' .. tonumber(n:sub(s + 1, e - 1))]
-            -- print(obj)
-        else
-            -- print(n)
-            obj = obj[n]
+            idx = tonumber(n:sub(s + 1, e - 1))
         end
+        obj = obj[n .. '@' .. idx]
     end
 
     if obj and obj["@val"] then
@@ -639,12 +637,11 @@ function luaxml:get_attrs(path)
     -- find all node name and iterate it.
     for n in string.gmatch(path, "/([^/]+)") do
         local s, e = string.find(n, "%[%d+%]", 1, false)
+        local idx = tonumber(1)
         if s then
-            obj = obj[string.sub(n, 1, s - 1)][tonumber(string.sub(n, s + 1, e - 1))]
-            print(obj)
-        else
-            obj = obj[n]
+            idx = tonumber(n:sub(s + 1, e - 1))
         end
+        obj = obj[n .. '@' .. idx]
     end
 
     return obj["@attr"]
@@ -662,9 +659,11 @@ function luaxml:set(path, val, attr)
     -- find all node name and iterate it.
     for n in string.gmatch(path, "/([^/]+)") do
         local s, e = string.find(n, "%[%d+%]", 1, false)
+        local idx = tonumber(1)
         if s then
-            n = n:sub(1, s - 1) .. '@' .. tonumber(n:sub(s + 1, e - 1))
+            idx = tonumber(n:sub(s + 1, e - 1))
         end
+        n = n .. '@' .. idx
         if obj[n] then
             obj = obj[n]
         else

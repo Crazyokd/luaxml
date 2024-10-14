@@ -28,12 +28,12 @@ local luaxml = require "luaxml"
 local lx1 = luaxml.new()
 lx1.xt = {
     ["@meta"] = {},
-    root = {
-        key1 = {
+    ["root@1"] = {
+        ["key1@1"] = {
             ["@val"] = "value1",
-            ["@next"] = "key2",
+            ["@next"] = "key2@1",
         },
-        key2 = {
+        ["key2@1"] = {
             ["@val"] = 123,
             ["@attr"] = { type = "string" },
             ["@next"] = "key3@1",
@@ -44,22 +44,22 @@ lx1.xt = {
         },
         ["key3@2"] = {
             ["@val"] = 32,
-            ["@next"] = "key4",
+            ["@next"] = "key4@1",
         },
-        key4 = {
-            key41 = {
+        ["key4@1"] = {
+            ["key41@1"] = {
                 ["@val"] = 123,
-                ["@next"] = "key42"
+                ["@next"] = "key42@1"
             },
-            key42 = {
+            ["key42@1"] = {
                 ["@val"] = 123,
             },
-            ["@head"] = "key41",
+            ["@head"] = "key41@1",
             ["@attr"] = { type = "map" },
         },
-        ["@head"] = "key1",
+        ["@head"] = "key1@1",
     },
-    ["@head"] = "root",
+    ["@head"] = "root@1",
 }
 
 
