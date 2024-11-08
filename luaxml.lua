@@ -510,7 +510,6 @@ function luaxml:add_meta(meta)
 end
 
 -- public API
-
 -- alloc a new luaxml object
 function luaxml.new()
     local lx = {}
@@ -616,6 +615,7 @@ function luaxml:get(path)
         local idx = tonumber(1)
         if s then
             idx = tonumber(n:sub(s + 1, e - 1))
+            n = n:sub(1, s - 1)
         end
         obj = obj[n .. '@' .. idx]
     end
@@ -635,6 +635,7 @@ function luaxml:get_attrs(path)
         local idx = tonumber(1)
         if s then
             idx = tonumber(n:sub(s + 1, e - 1))
+            n = n:sub(1, s - 1)
         end
         obj = obj[n .. '@' .. idx]
     end
@@ -657,6 +658,7 @@ function luaxml:set(path, val, attr)
         local idx = tonumber(1)
         if s then
             idx = tonumber(n:sub(s + 1, e - 1))
+            n = n:sub(1, s - 1)
         end
         n = n .. '@' .. idx
         if obj[n] then
