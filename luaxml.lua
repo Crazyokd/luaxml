@@ -588,26 +588,21 @@ end
 function luaxml:save(fn, fflag)
     fflag = fflag or 'w+'
     local f = assert(io.open(fn, fflag))
-    self:print(nil, f)
+    f:write(tostring(self))
     f:close()
 end
 
--- print xml str
-function luaxml:print(xt, f)
-    xt = xt or self.xt
-    f = f or io.output()
-
+-- tostring
+function luaxml:__tostring()
     self.xmlstr = {}
     if self.xt.meta then
         table.insert(self.xmlstr, self.xt.meta)
     end
-    self:print_i(xt, -1)
-    f:write(table.concat(self.xmlstr, '\n'))
-    if (f == io.output()) then
-        print()
-    end
+    self:print_i(self.xt, -1)
+    local xmlstr = table.concat(self.xmlstr, '\n')
     -- release it immediately
     self.xmlstr = nil
+    return xmlstr
 end
 
 -- get by path

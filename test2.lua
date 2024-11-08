@@ -31,5 +31,5 @@ local lx1 = lxml.new()
 
 lx1:load(xml)
 -- print_r(lx1.xt)
-lx1:print()
+print(lx1)
 lx1:save('test2.xml')

@@ -63,7 +63,7 @@ lx1.xt = {
 }
 
 
-lx1:print()
+print(lx1)
 
 print(lx1:get("/root/key1"))
 lx1:set("/root/key1", 456)
@@ -83,4 +83,4 @@ for k, v in pairs(key4attrs) do
     print(k, v)
 end
 
-lx1:print()
+print(lx1)
