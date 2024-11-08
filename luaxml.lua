@@ -1,4 +1,11 @@
 local luaxml = {}
+luaxml.__index = function(obj, key)
+    if luaxml[key] then
+        return luaxml[key]
+    end
+    return obj:get(key)
+end
+
 
 ---Converts the decimal code of a character to its corresponding char
 --if it's a graphical char, otherwise, returns the HTML ISO code
@@ -514,7 +521,6 @@ end
 function luaxml.new()
     local lx = {}
     setmetatable(lx, luaxml)
-    luaxml.__index = luaxml
     -- for anyone who want to use lx as a metatable
     lx.__index = luaxml
     lx.xt = {}

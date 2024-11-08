@@ -65,15 +65,15 @@ lx1.xt = {
 
 print(lx1)
 
-print(lx1:get("/root/key1"))
+print(assert(lx1:get("/root/key1") == "value1"))
 lx1:set("/root/key1", 456)
-print(lx1:get("/root/key1"))
+print(assert(lx1:get("/root/key1") == 456))
 
 
-print(lx1:get("/root/key3[1]"))
+print(lx1:get("/root/key3[1]")) -- 31
 lx1:set("/root/key3[1]", 789)
-print(lx1:get("/root/key3[1]"))
-print(lx1:get("/root/key5"))
+print(lx1:get("/root/key3[1]")) -- 789
+print(lx1:get("/root/key5")) -- nil
 
 lx1:set("/root/key3[3]", 1024)
 
@@ -84,3 +84,5 @@ for k, v in pairs(key4attrs) do
 end
 
 print(lx1)
+
+print(lx1["/root/key1"])
