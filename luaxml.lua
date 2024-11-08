@@ -3,7 +3,17 @@ luaxml.__index = function(obj, key)
     if luaxml[key] then
         return luaxml[key]
     end
+    if obj.mememto[key] then
+        return obj.mememto[key]
+    end
     return obj:get(key)
+end
+luaxml.__newindex = function(obj, k, v)
+    if string.match(k, "^/") then
+        obj:set(k, v)
+    else
+        obj.mememto[k] = v
+    end
 end
 
 
@@ -520,6 +530,7 @@ end
 -- alloc a new luaxml object
 function luaxml.new()
     local lx = {}
+    lx.mememto = {}
     setmetatable(lx, luaxml)
     -- for anyone who want to use lx as a metatable
     lx.__index = luaxml

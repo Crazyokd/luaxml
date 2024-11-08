@@ -71,11 +71,12 @@ print(assert(lx1:get("/root/key1") == 456))
 
 
 print(lx1:get("/root/key3[1]")) -- 31
-lx1:set("/root/key3[1]", 789)
+lx1["/root/key3[1]"] = 789
 print(lx1:get("/root/key3[1]")) -- 789
 print(lx1:get("/root/key5")) -- nil
 
-lx1:set("/root/key3[3]", 1024)
+-- lx1:set("/root/key3[3]", 1024)
+lx1["/root/key3[3]"] = 1024
 
 -- iterate attrs
 local key4attrs = lx1:get_attrs("/root/key4")
