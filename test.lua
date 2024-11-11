@@ -79,6 +79,7 @@ print(lx1:get("/root/key5")) -- nil
 lx1["/root/key3[3]"] = 1024
 
 -- iterate attrs
+assert(lx1["/root/key4/@type"] == "map")
 local key4attrs = lx1:get_attrs("/root/key4")
 for k, v in pairs(key4attrs) do
     print(k, v)

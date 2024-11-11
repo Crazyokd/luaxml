@@ -1,12 +1,12 @@
 local luaxml = {}
-luaxml.__index = function(obj, key)
-    if luaxml[key] then
-        return luaxml[key]
+luaxml.__index = function(obj, k)
+    if luaxml[k] then
+        return luaxml[k]
     end
-    if obj.mememto[key] then
-        return obj.mememto[key]
+    if obj.mememto[k] then
+        return obj.mememto[k]
     end
-    return obj:get(key)
+    return obj:get(k)
 end
 luaxml.__newindex = function(obj, k, v)
     if string.match(k, "^/") then
@@ -628,13 +628,19 @@ function luaxml:get(path)
     local obj = self.xt
     -- find all node name and iterate it.
     for n in string.gmatch(path, "/([^/]+)") do
-        local s, e = string.find(n, "%[%d+%]", 1, false)
-        local idx = tonumber(1)
+        local s, e = string.find(n, "^@", 1, false)
         if s then
-            idx = tonumber(n:sub(s + 1, e - 1))
-            n = n:sub(1, s - 1)
+            -- attribute
+            return obj["@attr"][n:sub(s + 1)]
+        else
+            s, e = string.find(n, "%[%d+%]", 1, false)
+            local idx = tonumber(1)
+            if s then
+                idx = tonumber(n:sub(s + 1, e - 1))
+                n = n:sub(1, s - 1)
+            end
+            obj = obj[n .. '@' .. idx]
         end
-        obj = obj[n .. '@' .. idx]
     end
 
     if obj and obj["@val"] then
