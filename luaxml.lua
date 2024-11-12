@@ -116,11 +116,86 @@ end
 
 --- Removes whitespaces
 local function stripWS(s)
-    -- if self.options.stripWS then
     s = string.gsub(s, '^%s+', '')
     s = string.gsub(s, '%s+$', '')
-    -- end
     return s
+end
+
+local function find_key(t, key)
+    local n = 1
+    while true do
+        local currentKey = key .. "@" .. n
+        if t[currentKey] then
+            n = n + 1
+        else
+            break
+        end
+    end
+    return key .. '@', n - 1 -- 返回找到的最大 n 值
+end
+
+-- add empty node
+-- local function add_enode(obj, tname)
+--     -- default always add node before the head
+--     local head_key = obj["@head"]
+--     obj[tname] = {["@next"] = head_key}
+--     obj["@head"] = tname
+--
+--     return obj[tname]
+-- end
+
+-- add empty node
+local function add_enode(obj, tname)
+    -- default always add node after then tail
+    obj[tname] = {}
+    local key = obj["@head"]
+    if not key then
+        -- the tname is first child of obj
+        obj["@head"] = tname
+    else
+        while obj[key]["@next"] do
+            key = obj[key]["@next"]
+        end
+        obj[key]["@next"] = tname
+    end
+
+    return obj[tname]
+end
+
+local function add_meta(self, meta)
+    self.xt.meta = meta
+end
+
+local function add_tag(self, tag)
+    local path = '/' .. table.concat(self._stack, '/')
+    -- print("path", path, tag.name, tag.attrs)
+    local attr = tag.attrs
+    local obj = self.xt
+    -- find all node name and iterate it.
+    local iter = string.gmatch(path, "/([^/]+)")
+    local n = iter()
+    while n do
+        local next = iter()
+        local k, i = find_key(obj, n)
+        -- last node, we add it
+        if not next then
+            obj = add_enode(obj, k .. (i + 1))
+            break
+        end
+        if obj[k .. i] then
+            obj = obj[k .. i]
+        end
+        n = next
+    end
+
+    if attr then
+        if not obj["@attr"] then
+            obj["@attr"] = {}
+        end
+        for k, v in pairs(attr) do
+            obj["@attr"][k] = v
+        end
+    end
 end
 
 local function parseEntities(s)
@@ -161,7 +236,7 @@ local function parseTag(s)
     return tag
 end
 
-function luaxml:parseXmlDeclaration(xml, f)
+local function parseXmlDeclaration(self, xml, f)
     -- XML Declaration
     f.match, f.endMatch, f.text = string.find(xml, XmlParser._PI, f.pos)
     if not f.match then
@@ -180,7 +255,7 @@ function luaxml:parseXmlDeclaration(xml, f)
         err(XmlParser._errstr.declAttrErr, f.pos)
     end
 
-    self:add_meta('<?' .. f.text .. '?>')
+    add_meta(self, '<?' .. f.text .. '?>')
     -- if fexists(XmlParser.handler, 'decl') then
     --     XmlParser.handler:decl(tag, f.match, f.endMatch)
     -- end
@@ -266,7 +341,7 @@ end
 --- Parse a Normal tag
 -- Need check for embedded '>' in attribute value and extend
 -- match recursively if necessary eg. <tag attr="123>456">
-function luaxml:parseNormalTag(xml, f)
+local function parseNormalTag(self, xml, f)
     --Check for errors
     while 1 do
         --If there isn't an attribute without closing quotes (single or double quotes)
@@ -304,7 +379,7 @@ function luaxml:parseNormalTag(xml, f)
     else
         table.insert(self._stack, tag.name)
 
-        self:add_tag(tag)
+        add_tag(self, tag)
 
         -- Self-Closing Tag
         if (f.endt2 == "/") then
@@ -318,10 +393,10 @@ function luaxml:parseNormalTag(xml, f)
     return tag
 end
 
-function luaxml:parseTagType(xml, f)
+local function parseTagType(self, xml, f)
     -- Test for tag type
     if string.find(string.sub(f.tagstr, 1, 5), "?xml%s") then
-        self:parseXmlDeclaration(xml, f)
+        parseXmlDeclaration(self, xml, f)
     elseif string.sub(f.tagstr, 1, 1) == "?" then
         parseXmlProcessingInstruction(xml, f)
     elseif string.sub(f.tagstr, 1, 3) == "!--" then
@@ -331,13 +406,13 @@ function luaxml:parseTagType(xml, f)
     elseif string.sub(f.tagstr, 1, 8) == "![CDATA[" then
         parseCdata(xml, f)
     else
-        self:parseNormalTag(xml, f)
+        parseNormalTag(self, xml, f)
     end
 end
 
 --- Get next tag (first pass - fix exceptions below).
 --@return true if the next tag could be got, false otherwise
-function luaxml:getNextTag(xml, f)
+local function getNextTag(self, xml, f)
     f.match, f.endMatch, f.text, f.endt1, f.tagstr, f.endt2 = string.find(xml, XmlParser._XML, f.pos)
     if not f.match then
         if string.find(xml, XmlParser._WS, f.pos) then
@@ -375,7 +450,7 @@ local function print_attr(attr)
     return s
 end
 
-function luaxml:print_stag(tn, attr, level)
+local function print_stag(self, tn, attr, level)
     local attrStr = print_attr(attr)
     local spaces = print_space(level)
     if (tn ~= nil) then
@@ -383,14 +458,14 @@ function luaxml:print_stag(tn, attr, level)
     end
 end
 
-function luaxml:print_etag(tn, level)
+local function print_etag(self, tn, level)
     local spaces = print_space(level)
     if (tn ~= nil) then
         table.insert(self.xmlstr, spaces .. '</' .. tn .. '>')
     end
 end
 
-function luaxml:print_tag(tn, tag_val, attr, level)
+local function print_tag(self, tn, tag_val, attr, level)
     local attrstr = print_attr(attr)
     local spaces = print_space(level)
     if tag_val then
@@ -404,69 +479,28 @@ local function rmv_idx(key)
     return key:match("^([^@]+)");
 end
 
-function luaxml:print_i(xt, level, tn)
+local function print_i(self, xt, level, tn)
     if xt["@head"] then
         -- kv pair
         local key = xt["@head"]
         level = level + 1
         while key do
             if xt[key]["@head"] then
-                self:print_stag(rmv_idx(key), xt[key]["@attr"], level)
+                print_stag(self, rmv_idx(key), xt[key]["@attr"], level)
             end
-            self:print_i(xt[key], level, key)
+            print_i(self, xt[key], level, key)
             if xt[key]["@head"] then
-                self:print_etag(rmv_idx(key), level)
+                print_etag(self, rmv_idx(key), level)
             end
             key = xt[key]["@next"]
         end
     else
-        self:print_tag(rmv_idx(tn), xt["@val"], xt["@attr"], level)
+        print_tag(self, rmv_idx(tn), xt["@val"], xt["@attr"], level)
     end
-end
-
--- add empty node
--- local function add_enode(obj, tname)
---     -- default always add node before the head
---     local head_key = obj["@head"]
---     obj[tname] = {["@next"] = head_key}
---     obj["@head"] = tname
---
---     return obj[tname]
--- end
-
--- add empty node
-local function add_enode(obj, tname)
-    -- default always add node after then tail
-    obj[tname] = {}
-    local key = obj["@head"]
-    if not key then
-        -- the tname is first child of obj
-        obj["@head"] = tname
-    else
-        while obj[key]["@next"] do
-            key = obj[key]["@next"]
-        end
-        obj[key]["@next"] = tname
-    end
-
-    return obj[tname]
-end
-
-local function find_key(t, key)
-    local n = 1
-    while true do
-        local currentKey = key .. "@" .. n
-        if t[currentKey] then
-            n = n + 1
-        else
-            break
-        end
-    end
-    return key .. '@', n - 1 -- 返回找到的最大 n 值
 end
 
 -- construct inner xml table
-function luaxml:set_val(v)
+local function set_val(self, v)
     local path = '/' .. table.concat(self._stack, '/')
     if string.len(v) ~= 0 then
         -- print("path", path, v)
@@ -488,42 +522,6 @@ function luaxml:set_val(v)
 
         obj["@val"] = v
     end
-end
-
-function luaxml:add_tag(tag)
-    local path = '/' .. table.concat(self._stack, '/')
-    -- print("path", path, tag.name, tag.attrs)
-    local attr = tag.attrs
-    local obj = self.xt
-    -- find all node name and iterate it.
-    local iter = string.gmatch(path, "/([^/]+)")
-    local n = iter()
-    while n do
-        local next = iter()
-        local k, i = find_key(obj, n)
-        -- last node, we add it
-        if not next then
-            obj = add_enode(obj, k .. (i + 1))
-            break
-        end
-        if obj[k .. i] then
-            obj = obj[k .. i]
-        end
-        n = next
-    end
-
-    if attr then
-        if not obj["@attr"] then
-            obj["@attr"] = {}
-        end
-        for k, v in pairs(attr) do
-            obj["@attr"][k] = v
-        end
-    end
-end
-
-function luaxml:add_meta(meta)
-    self.xt.meta = meta
 end
 
 -- public API
@@ -568,7 +566,7 @@ function luaxml:parse(xml, parseAttributes)
     }
 
     while f.match do
-        if not self:getNextTag(xml, f) then
+        if not getNextTag(self, xml, f) then
             break
         end
 
@@ -577,9 +575,9 @@ function luaxml:parse(xml, parseAttributes)
         f.endText = f.match + string.len(f.text) - 1
         f.match = f.match + string.len(f.text)
         f.text = parseEntities(stripWS(f.text))
-        self:set_val(f.text)
+        set_val(self, f.text)
 
-        self:parseTagType(xml, f)
+        parseTagType(self, xml, f)
         f.pos = f.endMatch + 1
     end
 end
@@ -614,7 +612,7 @@ function luaxml:__tostring()
     if self.xt.meta then
         table.insert(self.xmlstr, self.xt.meta)
     end
-    self:print_i(self.xt, -1)
+    print_i(self, self.xt, -1)
     local xmlstr = table.concat(self.xmlstr, '\n')
     -- release it immediately
     self.xmlstr = nil
