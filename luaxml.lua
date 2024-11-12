@@ -628,6 +628,9 @@ function luaxml:get(path)
     local obj = self.xt
     -- find all node name and iterate it.
     for n in string.gmatch(path, "/([^/]+)") do
+        if not obj then
+            break
+        end
         local s, e = string.find(n, "^@", 1, false)
         if s then
             -- attribute
