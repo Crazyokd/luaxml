@@ -1,4 +1,6 @@
-.PHONY: clean run1 run2
+.PHONY: clean all run1 run2
+
+all: run1 run2
 
 run1:
 	lua test.lua
