@@ -1,6 +1,11 @@
 # LuaXml
 lua <=> xml **with order**
 
+## Install
+```
+sudo luarocks install  --only-from=https://luarocks.org/manifests/Crazyokd luaxml
+```
+
 ## Example
 ref [test.lua](test.lua) and [test2.lua](test2.lua)
 
