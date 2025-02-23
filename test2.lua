@@ -27,9 +27,8 @@ local xml = f:read("a")
 f:close()
 
 local lxml = require "luaxml"
-local lx1 = lxml.new()
+local lx1 = lxml.new(xml)
 
-lx1:load(xml)
 -- print_r(lx1.xt)
 print(lx1)
 lx1:save('test2.xml')

@@ -526,13 +526,16 @@ end
 
 -- public API
 -- alloc a new luaxml object
-function luaxml.new()
+function luaxml.new(str)
     local lx = {}
     lx.mememto = {}
     setmetatable(lx, luaxml)
     -- for anyone who want to use lx as a metatable
     lx.__index = luaxml
     lx.xt = {}
+    if str then
+        lx:load(str)
+    end
     return lx
 end
 
