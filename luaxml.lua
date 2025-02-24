@@ -695,7 +695,9 @@ function luaxml:set(path, val, attr)
         end
     end
 
-    obj["@attr"] = attr
+    if attr then
+        obj["@attr"] = attr
+    end
     -- neither a map nor an array
     if not obj["@head"] and #obj == 0 then
         obj["@val"] = val
